@@ -70,6 +70,7 @@ import javax.swing.text.JTextComponent;
  * </pre></code>
  * @author Volker Berlin
  */
+@SuppressWarnings("UseSpecificCatch")
 public class SpellChecker {
     
     private final static ArrayList<LanguageAction> languages = new ArrayList<LanguageAction>();
@@ -221,6 +222,9 @@ public class SpellChecker {
         if( baseURL == null ){
             try {
                 baseURL = SpellChecker.class.getResource( "/dictionaries.cnf" );
+                if( baseURL == null ) {
+                    baseURL = SpellChecker.class.getResource( "/com/inet/jortho/dictionaries.cnf" );
+                }
                 if( baseURL != null ) {
                     baseURL = new URL( baseURL, "." );
                 } else {
@@ -818,7 +822,15 @@ public class SpellChecker {
                     try {
                         DictionaryFactory factory = new DictionaryFactory();
                         try {
-                            factory.loadWordList( new URL( baseURL, "dictionary_" + locale + extension ) );
+                            URL url;
+                            url = new URL( baseURL, "dictionary_" + locale + extension );
+                            if( !exists(url) ) {
+                                url = this.getClass().getResource("dictionary_" + locale + extension );
+                                if( url == null ) {
+                                    url = this.getClass().getResource("/com/inet/jortho/i18n/resource/languages/dictionary_" + locale + extension );
+                                }
+                            }
+                            factory.loadWordList(url);
                         } catch( Exception ex ) {
                         	SpellChecker.getMessageHandler().handleError( ex.toString(), "Error", ex );
                         }
@@ -853,6 +865,21 @@ public class SpellChecker {
             thread.setPriority( Thread.NORM_PRIORITY );
             thread.setDaemon( true );
             thread.start();
+        }
+        
+        private boolean exists(URL url) {
+            InputStream conn = null;
+            try {
+                conn = url.openStream();
+                return true;
+            } catch(Exception ex) {
+                return false;
+            } finally {
+                try {
+                    conn.close();
+                } catch (Exception ex) {
+                }
+            }
         }
         
         @Override
